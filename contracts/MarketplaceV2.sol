@@ -12,7 +12,7 @@ contract Marketplace is Initializable, AccessControlUpgradeable, ERC1155Holder {
 
     event NewOffer(uint offerId);
     event OfferCancelled(uint offerId);
-    event OfferClosed(uint offerId);
+    event OfferUpdated(uint offerId);
 
     address GameItemsAddress;
     address TokenAddress;
@@ -21,6 +21,8 @@ contract Marketplace is Initializable, AccessControlUpgradeable, ERC1155Holder {
     struct Offer {
         address owner;
         uint itemId;
+        uint originalAmount;
+        uint currentAmount;
         uint price;
         string status;
     }
@@ -47,6 +49,13 @@ contract Marketplace is Initializable, AccessControlUpgradeable, ERC1155Holder {
         return offers[offerId].itemId;
     }
 
+    function offerOriginalAmount(uint offerId) public view returns (uint) {
+        return offers[offerId].originalAmount;
+    }
+    function offerCurrentAmount(uint offerId) public view returns (uint) {
+        return offers[offerId].currentAmount;
+    }
+
     function offerPrice(uint offerId) public view returns (uint) {
         return offers[offerId].price;
     }
@@ -60,44 +69,38 @@ contract Marketplace is Initializable, AccessControlUpgradeable, ERC1155Holder {
         return quantity;
     }
 
-    function CreateOffers(uint itemId, uint itemQnt, uint price) public {
-        require(gameItems.balanceOf(msg.sender, 0) >= itemQnt);
+    function CreateOffer(uint itemId, uint itemQnt, uint price) public {
+        require(gameItems.balanceOf(msg.sender, itemId) >= itemQnt);
         gameItems.safeTransferFrom(msg.sender, address(this), itemId, itemQnt, "");
-        for (uint256 i = 0; i < itemQnt; i++) {
-            uint id = offers.length;
-            offers.push(Offer(msg.sender, itemId, price, "Open"));
-            emit NewOffer(id);
-        }
+        offers.push(Offer(msg.sender, itemId, itemQnt, itemQnt, price, "Open"));
+        uint id = offers.length;
+        emit NewOffer(id);
     }
 
-    function CancelOffers(uint[] calldata offerIds) public {
-        for (uint256 i = 0; i < offerIds.length; i++) {
-            require(offers[offerIds[i]].owner == msg.sender);
-            require(keccak256(abi.encodePacked(offers[offerIds[i]].status)) == keccak256(abi.encodePacked("Open")));
-        }
-        for (uint256 i = 0; i < offerIds.length; i++) {
-            offers[offerIds[i]].status = "Cancelled";
-            gameItems.safeTransferFrom(address(this), msg.sender, offers[offerIds[i]].itemId, 1, "");
-            emit OfferCancelled(offerIds[i]);
-        }
+    function CancelOffer(uint offerId) public {
+        require(offers[offerId].owner == msg.sender);
+        require(keccak256(abi.encodePacked(offers[offerId].status)) == keccak256(abi.encodePacked("Open")));
+        offers[offerId].status = "Cancelled";
+        gameItems.safeTransferFrom(address(this), msg.sender, offers[offerId].itemId, offers[offerId].currentAmount, "");
+        emit OfferCancelled(offerId);
     }
 
-    function AcceptOffers(uint[] calldata offerIds) public {
-        uint[] memory costs;
-        for (uint256 i = 0; i < offerIds.length; i++) {
-            require(offers[offerIds[i]].owner != msg.sender);
-            require(keccak256(abi.encodePacked(offers[offerIds[i]].status)) == keccak256(abi.encodePacked("Open")));
-            costs[i] = offers[offerIds[i]].price;
+    function AcceptOffer(uint offerId, uint itemQnt) public {
+        require(offers[offerId].owner != msg.sender);
+        require(keccak256(abi.encodePacked(offers[offerId].status)) == keccak256(abi.encodePacked("Open")));
+        uint totalPrice = offers[offerId].price*itemQnt;
+        require(PTG.balanceOf(msg.sender)>= totalPrice);
+        require(itemQnt <= offers[offerId].currentAmount);
+
+        offers[offerId].currentAmount = offers[offerId].currentAmount - itemQnt;
+        if (offers[offerId].currentAmount == 0) {
+            offers[offerId].status = "Closed";
         }
-        uint totalCost = getSum(costs);
-        require(PTG.balanceOf(msg.sender)>= totalCost);
-        for (uint256 i = 0; i < offerIds.length; i++) {
-            offers[offerIds[i]].status = "Closed";
-            PTG.transferFrom(msg.sender, offers[offerIds[i]].owner, offers[offerIds[i]].price*96/100);
-            PTG.transferFrom(msg.sender, GameDevAddress, offers[offerIds[i]].price*4/100);
-            gameItems.safeTransferFrom(address(this), msg.sender, offers[offerIds[i]].itemId, 1, "");
-            emit OfferClosed(offerIds[i]);
-        }
+        PTG.transferFrom(msg.sender, offers[offerId].owner, totalPrice*96/100);
+        PTG.transferFrom(msg.sender, GameDevAddress, totalPrice*4/100);
+        gameItems.safeTransferFrom(address(this), msg.sender, offers[offerId].itemId, itemQnt, "");
+        emit OfferUpdated(offerId);
+
     }
 
     function transferGameItemsAddress(address newGameItems) public onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -113,12 +116,5 @@ contract Marketplace is Initializable, AccessControlUpgradeable, ERC1155Holder {
     function transferGameDevAddress(address newGameDev) public onlyRole(DEFAULT_ADMIN_ROLE) {
         GameDevAddress = newGameDev;
     }
-
-    function getSum(uint[] memory arr) public pure returns(uint) {
-        uint sum = 0;
-        for(uint i = 0; i < arr.length; i++)
-            sum = sum + arr[i];
-        return sum;
-}
 
 }
