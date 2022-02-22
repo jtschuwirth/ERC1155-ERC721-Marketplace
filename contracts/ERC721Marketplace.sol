@@ -59,10 +59,12 @@ contract ERC721Marketplace is Initializable, AccessControlUpgradeable, ERC721Hol
         require(IERC721Upgradeable(nftAddress).ownerOf(nftId) == msg.sender);
         
         IERC721Upgradeable(nftAddress).safeTransferFrom(msg.sender, address(this), nftId);
+        
+        uint current = offerCounter.current();
         offerCounter.increment();
-        offers[offerCounter.current()] = Offer(msg.sender, nftAddress, nftId, price, "Open");
-        addressToOffers[msg.sender].push(offerCounter.current());
-        emit OfferStatusChange(offerCounter.current(), "Open");
+        offers[current] = Offer(msg.sender, nftAddress, nftId, price, "Open");
+        addressToOffers[msg.sender].push(current);
+        emit OfferStatusChange(current, "Open");
     }
 
     function CancelOffer(uint offerId) external nonReentrant() {

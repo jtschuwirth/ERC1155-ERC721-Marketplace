@@ -65,10 +65,12 @@ contract ERC1155Marketplace is Initializable, AccessControlUpgradeable, ERC1155H
         require(IERC1155Upgradeable(nftAddress).balanceOf(msg.sender, nftId) >= itemQnt);
         
         IERC1155Upgradeable(nftAddress).safeTransferFrom(msg.sender, address(this), nftId, itemQnt, "");
+        
+        uint current = offerCounter.current();
         offerCounter.increment();
-        offers[offerCounter.current()] = Offer(msg.sender, nftAddress, nftId, itemQnt, itemQnt, price, "Open");
-        addressToOffers[msg.sender].push(offerCounter.current());
-        emit OfferStatusChange(offerCounter.current(), "Open");
+        offers[current] = Offer(msg.sender, nftAddress, nftId, itemQnt, itemQnt, price, "Open");
+        addressToOffers[msg.sender].push(current);
+        emit OfferStatusChange(current, "Open");
     }
 
     function CancelOffer(uint offerId) external nonReentrant() {
