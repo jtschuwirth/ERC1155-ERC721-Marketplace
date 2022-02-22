@@ -103,16 +103,16 @@ contract ERC721Marketplace is Initializable, AccessControlUpgradeable, ERC721Hol
     }
 
         /**
-     * @dev adds new contract of ERC721 to the protocol
-     * @param _contract new nft contract to use on the protocol.
+     * @dev adds new contract ERC721 to the protocol
+     * @param _contract contract address to whitelist.
      */
     function addContract(address _contract) external onlyRole(DEFAULT_ADMIN_ROLE) {
         addressToBool[_contract] = true;
     }
 
     /**
-     * @dev removes a contract of ERC721 to the protocol
-     * @param _contract new nft contract to use on the protocol.
+     * @dev removes a contract ERC721 from the protocol
+     * @param _contract contract address to blacklist.
      */
     function removeContract(address _contract) external onlyRole(DEFAULT_ADMIN_ROLE) {
         addressToBool[_contract] = false;

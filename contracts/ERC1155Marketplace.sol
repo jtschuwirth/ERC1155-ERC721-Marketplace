@@ -114,16 +114,16 @@ contract ERC1155Marketplace is Initializable, AccessControlUpgradeable, ERC1155H
     }
 
         /**
-     * @dev adds new contract of ERC721 to the protocol
-     * @param _contract new nft contract to use on the protocol.
+     * @dev adds new contract ERC1155 to the protocol
+     * @param _contract contract address to whitelist.
      */
     function addContract(address _contract) external onlyRole(DEFAULT_ADMIN_ROLE) {
         addressToBool[_contract] = true;
     }
 
     /**
-     * @dev removes a contract of ERC721 to the protocol
-     * @param _contract new nft contract to use on the protocol.
+     * @dev removes a contract ERC1155 from the protocol
+     * @param _contract contract address to blacklist.
      */
     function removeContract(address _contract) external onlyRole(DEFAULT_ADMIN_ROLE) {
         addressToBool[_contract] = false;
