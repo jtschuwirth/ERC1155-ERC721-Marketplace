@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.3;
 
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/IERC1155Upgradeable.sol";
@@ -28,12 +29,15 @@ contract ERC1155Marketplace is Initializable, AccessControlUpgradeable, ERC1155H
     mapping(address => uint256[]) addressToOffers;
     mapping(address => bool) addressToBool;
 
+    using SafeERC20Upgradeable for IERC20Upgradeable;
     using CountersUpgradeable for CountersUpgradeable.Counter;
     CountersUpgradeable.Counter private offerCounter;
 
     uint256 Fee;
     address PayoutAddress;
     IERC20Upgradeable token;
+
+    constructor() initializer {}
 
     function initialize(address Payout, address TokenAddress, address BaseERC1155Address) initializer public {
         PayoutAddress = Payout;
@@ -92,8 +96,8 @@ contract ERC1155Marketplace is Initializable, AccessControlUpgradeable, ERC1155H
         if (offers[offerId].currentAmount == 0) {
             offers[offerId].status = "Closed";
         }
-        token.transferFrom(msg.sender, offers[offerId].owner, totalPrice*(100-Fee)/100);
-        token.transferFrom(msg.sender, PayoutAddress, totalPrice*Fee/100);
+        token.safeTransferFrom(msg.sender, offers[offerId].owner, totalPrice*(100-Fee)/100);
+        token.safeTransferFrom(msg.sender, PayoutAddress, totalPrice*Fee/100);
         IERC1155Upgradeable(offers[offerId].nft).safeTransferFrom(address(this), msg.sender, offers[offerId].nftId, itemQnt, "");
         emit OfferStatusChange(offerId, offers[offerId].status);
 

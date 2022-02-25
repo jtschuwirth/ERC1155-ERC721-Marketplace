@@ -2,6 +2,8 @@
 
 pragma solidity ^0.8.3;
 
+
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
@@ -26,12 +28,15 @@ contract ERC721Marketplace is Initializable, AccessControlUpgradeable, ERC721Hol
     mapping(address => uint256[]) addressToOffers;
     mapping(address => bool) addressToBool;
 
+    using SafeERC20Upgradeable for IERC20Upgradeable;
     using CountersUpgradeable for CountersUpgradeable.Counter;
     CountersUpgradeable.Counter private offerCounter;
 
     uint256 Fee;
     address PayoutAddress;
     IERC20Upgradeable token;
+
+    constructor() initializer {}
 
     function initialize(address Payout, address TokenAddress, address BaseERC721Address) initializer public {
         PayoutAddress = Payout;
@@ -80,8 +85,8 @@ contract ERC721Marketplace is Initializable, AccessControlUpgradeable, ERC721Hol
         require(keccak256(abi.encodePacked(offers[offerId].status)) == keccak256(abi.encodePacked("Open")));
         require(token.balanceOf(msg.sender)>= offers[offerId].price);
         
-        token.transferFrom(msg.sender, offers[offerId].owner, offers[offerId].price*(100-Fee)/100);
-        token.transferFrom(msg.sender, PayoutAddress, offers[offerId].price*(Fee)/100);
+        token.safeTransferFrom(msg.sender, offers[offerId].owner, offers[offerId].price*(100-Fee)/100);
+        token.safeTransferFrom(msg.sender, PayoutAddress, offers[offerId].price*(Fee)/100);
         IERC721Upgradeable(offers[offerId].nft).safeTransferFrom(address(this), msg.sender, offers[offerId].nftId);
         offers[offerId].status = "Closed";
         emit OfferStatusChange(offerId, offers[offerId].status);
