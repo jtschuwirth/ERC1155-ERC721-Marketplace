@@ -37,6 +37,7 @@ contract ERC1155Marketplace is Initializable, AccessControlUpgradeable, ERC1155H
     address PayoutAddress;
     IERC20Upgradeable token;
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
 
     function initialize(address Payout, address TokenAddress, address BaseERC1155Address) initializer public {

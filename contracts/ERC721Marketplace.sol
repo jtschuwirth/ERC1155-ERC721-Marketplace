@@ -36,6 +36,7 @@ contract ERC721Marketplace is Initializable, AccessControlUpgradeable, ERC721Hol
     address PayoutAddress;
     IERC20Upgradeable token;
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
 
     function initialize(address Payout, address TokenAddress, address BaseERC721Address) initializer public {
